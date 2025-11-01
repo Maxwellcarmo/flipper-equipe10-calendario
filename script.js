@@ -5,43 +5,71 @@ function obterSemestreAtual() {
   return { ano, semestre };
 }
 
-const eventos = {
-  7: [
-    { diaInicio: 30, diaFim: 30, titulo: "Semana Acadêmica Coordenadores", tipo: "evento" },
-    { diaInicio: 31, diaFim: 31, titulo: "Semana Acadêmica Professores", tipo: "evento" }
-  ],
-  8: [
-    { diaInicio: 1, diaFim: 1, titulo: "Semana Acadêmica Professores", tipo: "evento" },
-    { diaInicio: 1, diaFim: 1, titulo: "Inicio do Período Letívo", tipo: "evento" },
-    { diaInicio: 4, diaFim: 4, titulo: "Inicio das Aulas", tipo: "aula" }
-  ],
-  9: [
-    { diaInicio: 7, diaFim: 7, titulo: "Feriado - Independência do Brasil", tipo: "feriado" },
-    { diaInicio: 22, diaFim: 26, titulo: "Avaliação Oficial - 1º Bimestre", tipo: "prova" }
-  ],
-  10: [
-    { diaInicio: 3, diaFim: 3, titulo: "Realizar revisão de notas - 1º bimestre", tipo: "evento" },
-    { diaInicio: 12, diaFim: 12, titulo: "Feriado - Nossa Sr.a Aparecida", tipo: "feriado" },
-    { diaInicio: 13, diaFim: 13, titulo: "Recesso Escolar - Não haverá aula", tipo: "feriado" }
-  ],
-  11: [
-    { diaInicio: 2, diaFim: 2, titulo: "Feriado - Finados", tipo: "feriado" },
-    { diaInicio: 15, diaFim: 15, titulo: "Feriado - Proclamação da República", tipo: "feriado" },
-    { diaInicio: 17, diaFim: 21, titulo: "Avaliação Oficial - 2º Bimestre", tipo: "prova" },
-    { diaInicio: 17, diaFim: 29, titulo: "Avaliação Oficial DI - Disciplina Interativa", tipo: "prova" },
-    { diaInicio: 20, diaFim: 20, titulo: "Feriado - Dia Nacional de Zumbi e da Consciência Negra", tipo: "feriado" },
-     { diaInicio: 24, diaFim: 28, titulo: "Apresentação das Bancas de TCC", tipo: "evento" }
-  ], 
-  12: [
-    { diaInicio: 1, diaFim: 3, titulo: "Avaliaçãode 2ª Chamada", tipo: "exame" },
-    { diaInicio: 6, diaFim: 6, titulo: "Término das Aulas", tipo: "aula" },
-    { diaInicio: 1, diaFim: 5, titulo: "Lançamento de Notas Oficial DI", tipo: "evento" },
-    { diaInicio: 4, diaFim: 5, titulo: "Lançamento de Notas das Avaliações 2ª Chamada e Realizar revisão de Notas tardio", tipo: "evento" },
-    { diaInicio: 8, diaFim: 10, titulo: "Exame Final", tipo: "exame" },
-    { diaInicio: 11, diaFim: 12, titulo: "Lançamento das notas do Exame Final", tipo: "evento" },
-    { diaInicio: 31, diaFim: 31, titulo: "Encerramento do Período Letivo", tipo: "aula" }
-  ]
-};
+let eventos = {};
+
+async function carregarEventos() {
+  const SPREADSHEET_ID = '1LMCZvmkB2gn3sGQQj5ZDtEIqPVGygpzZ9S53PF2LUfM';
+  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
+
+  try {
+    console.log('Fazendo fetch da URL:', url);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.text();
+    console.log('Dados recebidos:', data);
+    
+    // Parse CSV data
+    const linhas = data.split('\n').slice(1); // Remove header
+    eventos = {};
+
+    linhas.forEach((linha, index) => {
+      // Remove as aspas e divide a linha
+      if (linha.trim() === '') return; // Pula linhas vazias
+      
+      const valores = linha.split(',').map(valor => valor.replace(/^"|"$/g, '').trim());
+      console.log('Processando linha:', index + 1, 'valores:', valores);
+      
+      // Ignorar o carimbo de data/hora e pegar os valores corretos
+      // [Carimbo, Mes, DataInicio, DataFim, Atividade, Tipo, Local, Curso, Observações, Nome]
+      const [, mes, dataInicio, dataFim, atividade, tipo, local, curso, observacoes, nome] = valores;
+      
+      const mesNum = parseInt(mes);
+      if (isNaN(mesNum)) {
+        console.log('Mês inválido:', mes);
+        return;
+      }
+      
+      // Processar as datas de início e fim
+      const diaInicio = parseInt(dataInicio);
+      const diaFim = dataFim ? parseInt(dataFim) : diaInicio; // Se não tem data fim, usa a data início
+      
+      if (!eventos[mesNum]) {
+        eventos[mesNum] = [];
+      }
+
+      eventos[mesNum].push({
+        diaInicio: diaInicio,
+        diaFim: diaFim,
+        titulo: atividade,
+        tipo: tipo.toLowerCase(),
+        local: local || '',
+        curso: curso || '',
+        observacoes: observacoes || '',
+        responsavel: nome || ''
+      });
+    });
+    
+    console.log('Eventos processados:', eventos);
+
+    // Após carregar os eventos, atualizar o calendário
+    const mesAtual = new Date().getMonth() + 1;
+    document.querySelector(`.mes-btn[data-mes='${mesAtual}']`)?.click();
+  } catch (error) {
+    console.error('Erro ao carregar eventos:', error);
+  }
+}
 
 const nomesMeses = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -139,7 +167,15 @@ function gerarListaEventos(mes) {
                      "🔵";
 
     const item = document.createElement("li");
-    item.innerHTML = `<span>${corIcone}</span> <strong>${ev.diaInicio}/${mes}${fim}:</strong> ${ev.titulo}`;
+    let detalhes = [];
+    if (ev.local) detalhes.push(`Local: ${ev.local}`);
+    if (ev.curso) detalhes.push(`Curso: ${ev.curso}`);
+    if (ev.responsavel) detalhes.push(`Responsável: ${ev.responsavel}`);
+    if (ev.observacoes) detalhes.push(`Obs: ${ev.observacoes}`);
+    
+    const detalhesTexto = detalhes.length > 0 ? `<br><small>${detalhes.join(' | ')}</small>` : '';
+    
+    item.innerHTML = `<span>${corIcone}</span> <strong>${ev.diaInicio}/${mes}${fim}:</strong> ${ev.titulo}${detalhesTexto}`;
     lista.appendChild(item);
   });
 
@@ -160,7 +196,5 @@ document.querySelectorAll(".mes-btn").forEach(btn => {
   });
 });
 
-// Inicializa com o mês atual ou fevereiro
-const { ano } = obterSemestreAtual();
-const mesAtual = new Date().getMonth() + 1;
-document.querySelector(`.mes-btn[data-mes='${mesAtual}']`)?.click();
+// Carrega os eventos e inicializa o calendário
+carregarEventos();
