@@ -602,6 +602,19 @@ body {
   border-color: #d1b3ff;
 }
 
+
+/* Tipo: palestra */
+.evento-palestra {
+  background-color: #9966cc;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+}
+
+.evento-palestra:hover {
+  background-color: #7a4eb9;
+}
+
 .calendario-grid {
   position: relative;
   overflow: visible;
