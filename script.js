@@ -126,7 +126,8 @@ function aplicarFiltrosImpl() {
   Object.keys(eventos).forEach(mes => {
     const lista = eventos[mes].filter(ev => {
       const tipoOk = tiposSel.length === 0 || tiposSel.includes((ev.tipo || '').toLowerCase());
-      const cursoOk = cursosSel.length === 0 || (ev.curso && cursosSel.includes(ev.curso));
+      const cursoOk = cursosSel.length === 0 || 
+                      (ev.curso && (ev.curso.toLowerCase() === 'todos' || cursosSel.includes(ev.curso)));
       return tipoOk && cursoOk;
     });
     if (lista.length) novo[mes] = lista;
