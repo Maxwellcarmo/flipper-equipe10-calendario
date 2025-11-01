@@ -20,7 +20,8 @@ function criarUIFiltros() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'filtro-toggle';
-    btn.className = 'button-event filtro-btn';
+  // Não reutilizamos a classe `button-event` para evitar conflito de posicionamento
+  btn.className = 'filtro-btn';
     btn.textContent = 'Filtrar';
     btn.addEventListener('click', () => {
       dropdown.classList.toggle('show');
