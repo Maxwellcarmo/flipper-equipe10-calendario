@@ -44,10 +44,10 @@ async function carregarEventos() {
           const valores = row.c.map(cell => cell ? (cell.v || '') : '');
           console.log('Valores da linha:', valores);
           
-          // [Carimbo, Mes, DataInicio, DataFim, Atividade, Tipo, Local, Curso, Observações, Nome]
-          const [timestamp, mes, dataInicio, dataFim, atividade, tipo, local, curso, observacoes, nome] = valores;
+          // [Carimbo, Mes, DataInicio, DataFim, Titulo, Tipo, Local, Curso, Observações, Nome]
+          const [timestamp, mes, dataInicio, dataFim, titulo, tipo, local, curso, observacoes, nome] = valores;
           
-          if (!mes || !dataInicio || !atividade) {
+          if (!mes || !dataInicio || !titulo) {
             console.log('Linha sem dados obrigatórios, pulando...');
             return;
           }
@@ -65,7 +65,7 @@ async function carregarEventos() {
           eventos[mesNum].push({
             diaInicio: parseInt(dataInicio),
             diaFim: dataFim ? parseInt(dataFim) : parseInt(dataInicio),
-            titulo: atividade,
+            titulo: titulo,
             tipo: (tipo || 'evento').toLowerCase(),
             local: local || '',
             curso: curso || '',
@@ -178,6 +178,11 @@ function gerarListaEventos(mes) {
 
     const item = document.createElement("li");
     let detalhes = [];
+    
+    // Adiciona o tipo do evento como primeiro detalhe
+    const tipoFormatado = ev.tipo.charAt(0).toUpperCase() + ev.tipo.slice(1); // Capitaliza a primeira letra
+    detalhes.push(`Tipo: ${tipoFormatado}`);
+    
     if (ev.local) detalhes.push(`Local: ${ev.local}`);
     if (ev.curso) detalhes.push(`Curso: ${ev.curso}`);
     if (ev.responsavel) detalhes.push(`Responsável: ${ev.responsavel}`);
