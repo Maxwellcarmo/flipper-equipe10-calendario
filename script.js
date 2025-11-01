@@ -20,8 +20,8 @@ function criarUIFiltros() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'filtro-toggle';
-  // Não reutilizamos a classe `button-event` para evitar conflito de posicionamento
-  btn.className = 'filtro-btn';
+    // Reaproveita estilo base de botão e aplica classe auxiliar para overrides
+    btn.className = 'button-event filtro-btn';
     btn.textContent = 'Filtrar';
     btn.addEventListener('click', () => {
       dropdown.classList.toggle('show');
@@ -71,8 +71,13 @@ function criarUIFiltros() {
     filtroWrapper.appendChild(btn);
     filtroWrapper.appendChild(dropdown);
 
-    // Insere antes do botão de adicionar evento (se existir)
-    container.appendChild(filtroWrapper);
+    // Insere antes do botão de adicionar evento (se existir), para não sobrepor
+    const addBtnEl = container.querySelector('.button-event');
+    if (addBtnEl) {
+      container.insertBefore(filtroWrapper, addBtnEl);
+    } else {
+      container.appendChild(filtroWrapper);
+    }
   }
 
   // Preenche opções (atualiza os containers)

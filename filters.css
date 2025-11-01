@@ -1,0 +1,96 @@
+/* Filter UI overrides: button + dropdown */
+.filtros-wrapper {
+  position: absolute; /* Posiciona no canto inferior direito do calendário */
+  bottom: 18px;
+  right: 18px;
+  z-index: 60;
+  display: inline-block;
+}
+
+/* Reutiliza visual do botão principal, mas sem o posicionamento absoluto da classe base */
+.filtro-btn {
+  display: flex;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-align: center;
+  justify-content: center;
+  position: static; /* sobrescreve position:absolute da classe .button-event */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.filtro-btn:hover,
+.filtro-btn.active {
+  background-color: #003f8a;
+}
+
+.filtro-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 48px; /* acima do botão */
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  padding: 12px;
+  min-width: 220px;
+}
+
+.filtro-dropdown.show {
+  display: block;
+}
+
+.filtro-section {
+  margin-bottom: 8px;
+}
+
+.filtro-section strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #0056b3;
+}
+
+.filtro-section label {
+  display: block;
+  font-size: 0.95rem;
+  color: #333;
+  margin: 4px 0;
+}
+
+.filtro-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.filtro-aplicar, .filtro-limpar {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.filtro-aplicar {
+  background-color: #0056b3;
+  color: #fff;
+}
+
+.filtro-aplicar:hover {
+  background-color: #003f8a;
+}
+
+.filtro-limpar {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.filtro-limpar:hover {
+  background-color: #d0d0d0;
+}
