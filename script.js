@@ -174,6 +174,7 @@ function gerarListaEventos(mes) {
                      ev.tipo === "aula"    ? "🟢" :
                      ev.tipo === "prova"   ? "🟡" :
                      ev.tipo === "exame"   ? "🟠" :
+                     ev.tipo === "palestra"? "🟣" :
                      "🔵";
 
     const item = document.createElement("li");
