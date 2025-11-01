@@ -7,10 +7,14 @@ function obterSemestreAtual() {
 
 let eventos = {};
 
+const nomesMeses = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
 async function carregarEventos() {
   const SPREADSHEET_ID = '1LMCZvmkB2gn3sGQQj5ZDtEIqPVGygpzZ9S53PF2LUfM';
-  // Usar o endpoint gviz que é mais confiável para acesso público
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
+  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
 
   try {
     console.log('Tentando carregar eventos da planilha...');
@@ -23,86 +27,67 @@ async function carregarEventos() {
       throw new Error(`Erro HTTP! status: ${response.status}`);
     }
     
-    const data = await response.text();
-    console.log('Dados brutos recebidos:', data);
+    const text = await response.text();
+    // Remove o prefixo e sufixo do JSON
+    const jsonData = text.substr(47).slice(0, -2);
     
-    // Parse CSV data
-    const linhas = data.split('\n').slice(1); // Remove header
-    console.log('Número de linhas encontradas:', linhas.length);
-    eventos = {};
-
-    linhas.forEach((linha, index) => {
-      try {
-        // Remove as aspas e divide a linha
-        if (linha.trim() === '') {
-          console.log('Linha vazia, pulando...');
-          return;
-        }
-        
-        const valores = linha.split(',').map(valor => valor.replace(/^"|"$/g, '').trim());
-        console.log('Processando linha:', index + 1, 'valores:', valores);
-        
-        if (valores.length < 5) {
-          console.log('Linha com dados insuficientes, pulando:', valores);
-          return;
-        }
-        
-        // Ignorar o carimbo de data/hora e pegar os valores corretos
-        // [Carimbo, Mes, DataInicio, DataFim, Atividade, Tipo, Local, Curso, Observações, Nome]
-        const [, mes, dataInicio, dataFim, atividade, tipo, local, curso, observacoes, nome] = valores;
-        
-        console.log('Dados extraídos:', { mes, dataInicio, dataFim, atividade, tipo });
-        
-        const mesNum = parseInt(mes);
-        if (isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
-          console.log('Mês inválido:', mes);
-          return;
-        }
-        
-        // Processar as datas de início e fim
-        const diaInicio = parseInt(dataInicio);
-        const diaFim = dataFim ? parseInt(dataFim) : diaInicio; // Se não tem data fim, usa a data início
-        
-        if (isNaN(diaInicio) || diaInicio < 1 || diaInicio > 31) {
-          console.log('Data de início inválida:', dataInicio);
-          return;
-        }
-        
-        if (!eventos[mesNum]) {
-          eventos[mesNum] = [];
-          console.log('Criando array para o mês:', mesNum);
-        }
-
-        const novoEvento = {
-          diaInicio: diaInicio,
-          diaFim: diaFim,
-          titulo: atividade || 'Evento sem título',
-          tipo: (tipo || 'evento').toLowerCase(),
-          local: local || '',
-          curso: curso || '',
-          observacoes: observacoes || '',
-          responsavel: nome || ''
-        };
-        
-        eventos[mesNum].push(novoEvento);
-        console.log('Evento adicionado:', novoEvento);
-      } catch (erro) {
-        console.error('Erro ao processar linha:', linha, erro);
+    try {
+      const data = JSON.parse(jsonData);
+      console.log('Dados parseados:', data);
+      eventos = {};
+      
+      if (data.table && data.table.rows) {
+        data.table.rows.forEach((row, index) => {
+          if (index === 0) return; // Pula o cabeçalho
+          if (!row.c) return;
+          
+          const valores = row.c.map(cell => cell ? (cell.v || '') : '');
+          console.log('Valores da linha:', valores);
+          
+          // [Carimbo, Mes, DataInicio, DataFim, Atividade, Tipo, Local, Curso, Observações, Nome]
+          const [timestamp, mes, dataInicio, dataFim, atividade, tipo, local, curso, observacoes, nome] = valores;
+          
+          if (!mes || !dataInicio || !atividade) {
+            console.log('Linha sem dados obrigatórios, pulando...');
+            return;
+          }
+          
+          const mesNum = parseInt(mes);
+          if (isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
+            console.log('Mês inválido:', mes);
+            return;
+          }
+          
+          if (!eventos[mesNum]) {
+            eventos[mesNum] = [];
+          }
+          
+          eventos[mesNum].push({
+            diaInicio: parseInt(dataInicio),
+            diaFim: dataFim ? parseInt(dataFim) : parseInt(dataInicio),
+            titulo: atividade,
+            tipo: (tipo || 'evento').toLowerCase(),
+            local: local || '',
+            curso: curso || '',
+            observacoes: observacoes || '',
+            responsavel: nome || ''
+          });
+        });
       }
-    });
-
-    console.log('Eventos processados:', eventos);
-
-    // Após carregar os eventos, atualizar o calendário
-    const mesAtual = new Date().getMonth() + 1;
-    document.querySelector(`.mes-btn[data-mes='${mesAtual}']`)?.click();
+      
+      console.log('Eventos processados:', eventos);
+      
+      // Após carregar os eventos, atualizar o calendário
+      const mesAtual = new Date().getMonth() + 1;
+      document.querySelector(`.mes-btn[data-mes='${mesAtual}']`)?.click();
+    } catch (parseError) {
+      console.error('Erro ao parsear JSON:', parseError);
+      throw parseError;
+    }
   } catch (error) {
     console.error('Erro ao carregar eventos:', error);
   }
-}const nomesMeses = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
+}
 
 function gerarCalendario(mes, ano) {
   const container = document.getElementById("calendario-container");
@@ -157,17 +142,14 @@ function gerarCalendario(mes, ano) {
 
   container.appendChild(grid);
 
-  // Botão "Adicionar evento" agora é criado após o calendário ser gerado
   const addBtn = document.createElement('button');
   addBtn.className = 'button-event';
   addBtn.textContent = 'Adicionar evento';
-  // Handler: abre o link em nova aba. Ajuste a URL abaixo conforme necessário.
   addBtn.setAttribute('aria-label', 'Abrir formulário em nova aba');
   addBtn.addEventListener('click', () => {
     const url = 'https://docs.google.com/forms/d/e/1FAIpQLSdEzJqvI-jjnn_331-Hd8EksZUsAOTgD2ob8rwPEeubQvD6Kg/viewform?usp=header';
     window.open(url, '_blank', 'noopener,noreferrer');
   });
-  // Adiciona o botão dentro do container (após o grid)
   container.appendChild(addBtn);
 }
 
