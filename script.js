@@ -9,58 +9,88 @@ let eventos = {};
 
 async function carregarEventos() {
   const SPREADSHEET_ID = '1LMCZvmkB2gn3sGQQj5ZDtEIqPVGygpzZ9S53PF2LUfM';
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv`;
+  // Usar o endpoint gviz que é mais confiável para acesso público
+  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
 
   try {
-    console.log('Fazendo fetch da URL:', url);
+    console.log('Tentando carregar eventos da planilha...');
+    console.log('URL:', url);
+    
     const response = await fetch(url);
+    console.log('Status da resposta:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Erro HTTP! status: ${response.status}`);
     }
+    
     const data = await response.text();
-    console.log('Dados recebidos:', data);
+    console.log('Dados brutos recebidos:', data);
     
     // Parse CSV data
     const linhas = data.split('\n').slice(1); // Remove header
+    console.log('Número de linhas encontradas:', linhas.length);
     eventos = {};
 
     linhas.forEach((linha, index) => {
-      // Remove as aspas e divide a linha
-      if (linha.trim() === '') return; // Pula linhas vazias
-      
-      const valores = linha.split(',').map(valor => valor.replace(/^"|"$/g, '').trim());
-      console.log('Processando linha:', index + 1, 'valores:', valores);
-      
-      // Ignorar o carimbo de data/hora e pegar os valores corretos
-      // [Carimbo, Mes, DataInicio, DataFim, Atividade, Tipo, Local, Curso, Observações, Nome]
-      const [, mes, dataInicio, dataFim, atividade, tipo, local, curso, observacoes, nome] = valores;
-      
-      const mesNum = parseInt(mes);
-      if (isNaN(mesNum)) {
-        console.log('Mês inválido:', mes);
-        return;
-      }
-      
-      // Processar as datas de início e fim
-      const diaInicio = parseInt(dataInicio);
-      const diaFim = dataFim ? parseInt(dataFim) : diaInicio; // Se não tem data fim, usa a data início
-      
-      if (!eventos[mesNum]) {
-        eventos[mesNum] = [];
-      }
+      try {
+        // Remove as aspas e divide a linha
+        if (linha.trim() === '') {
+          console.log('Linha vazia, pulando...');
+          return;
+        }
+        
+        const valores = linha.split(',').map(valor => valor.replace(/^"|"$/g, '').trim());
+        console.log('Processando linha:', index + 1, 'valores:', valores);
+        
+        if (valores.length < 5) {
+          console.log('Linha com dados insuficientes, pulando:', valores);
+          return;
+        }
+        
+        // Ignorar o carimbo de data/hora e pegar os valores corretos
+        // [Carimbo, Mes, DataInicio, DataFim, Atividade, Tipo, Local, Curso, Observações, Nome]
+        const [, mes, dataInicio, dataFim, atividade, tipo, local, curso, observacoes, nome] = valores;
+        
+        console.log('Dados extraídos:', { mes, dataInicio, dataFim, atividade, tipo });
+        
+        const mesNum = parseInt(mes);
+        if (isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
+          console.log('Mês inválido:', mes);
+          return;
+        }
+        
+        // Processar as datas de início e fim
+        const diaInicio = parseInt(dataInicio);
+        const diaFim = dataFim ? parseInt(dataFim) : diaInicio; // Se não tem data fim, usa a data início
+        
+        if (isNaN(diaInicio) || diaInicio < 1 || diaInicio > 31) {
+          console.log('Data de início inválida:', dataInicio);
+          return;
+        }
+        
+        if (!eventos[mesNum]) {
+          eventos[mesNum] = [];
+          console.log('Criando array para o mês:', mesNum);
+        }
 
-      eventos[mesNum].push({
-        diaInicio: diaInicio,
-        diaFim: diaFim,
-        titulo: atividade,
-        tipo: tipo.toLowerCase(),
-        local: local || '',
-        curso: curso || '',
-        observacoes: observacoes || '',
-        responsavel: nome || ''
-      });
+        const novoEvento = {
+          diaInicio: diaInicio,
+          diaFim: diaFim,
+          titulo: atividade || 'Evento sem título',
+          tipo: (tipo || 'evento').toLowerCase(),
+          local: local || '',
+          curso: curso || '',
+          observacoes: observacoes || '',
+          responsavel: nome || ''
+        };
+        
+        eventos[mesNum].push(novoEvento);
+        console.log('Evento adicionado:', novoEvento);
+      } catch (erro) {
+        console.error('Erro ao processar linha:', linha, erro);
+      }
     });
-    
+
     console.log('Eventos processados:', eventos);
 
     // Após carregar os eventos, atualizar o calendário
@@ -69,9 +99,7 @@ async function carregarEventos() {
   } catch (error) {
     console.error('Erro ao carregar eventos:', error);
   }
-}
-
-const nomesMeses = [
+}const nomesMeses = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
