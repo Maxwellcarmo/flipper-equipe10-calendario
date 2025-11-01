@@ -173,7 +173,7 @@ function gerarListaEventos(mes) {
     const corIcone = ev.tipo === "feriado" ? "🔴" :
                      ev.tipo === "aula"    ? "🟢" :
                      ev.tipo === "prova"   ? "🟡" :
-                     ev.tipo === "exame"   ? "🟠" :
+                     ev.tipo === "trabalho"   ? "🟠" :
                      ev.tipo === "palestra"? "🟣" :
                      "🔵";
 

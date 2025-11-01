@@ -567,52 +567,66 @@ body {
   transform: scale(1.05);
 }
 
-/* Tipo: feriado */
+/* Cores dos tipos de eventos */
+
+/* Tipo: feriado - Vermelho 🔴 */
 .evento-feriado {
-  background-color: #ffe5e5;
-  color: #b30000;
-  border-color: #ffcccc;
+  background-color: #ff4444;
+  color: white;
 }
 
-/* Tipo: prova */
-.evento-prova {
-  background-color: #e0ecff;
-  color: #004ba0;
-  border-color: #b3d1ff;
+.evento-feriado:hover {
+  background-color: #cc0000;
 }
 
-/* Tipo: aula */
+/* Tipo: aula - Verde 🟢 */
 .evento-aula {
-  background-color: #e4ffd9;
-  color: #2e7d32;
-  border-color: #b3ffb3;
+  background-color: #44ff44;
+  color: black;
 }
 
-/* Tipo: evento geral */
-.evento-evento {
-  background-color: #fff8dc;
-  color: #8c6d1f;
-  border-color: #ffe99e;
+.evento-aula:hover {
+  background-color: #00cc00;
 }
 
-/* Tipo: exame */
-.evento-exame {
-  background-color: #f3e5ff;
-  color: #6a1b9a;
-  border-color: #d1b3ff;
+/* Tipo: prova - Amarelo 🟡 */
+.evento-prova {
+  background-color: #ffff44;
+  color: black;
 }
 
+.evento-prova:hover {
+  background-color: #cccc00;
+}
 
-/* Tipo: palestra */
+/* Tipo: trabalho - Laranja 🟠 */
+.evento-trabalho {
+  background-color: #ffa500;
+  color: black;
+}
+
+.evento-trabalho:hover {
+  background-color: #cc8400;
+}
+
+/* Tipo: palestra - Roxo 🟣 */
 .evento-palestra {
   background-color: #9966cc;
-  font-weight: bold;
   color: white;
-  cursor: pointer;
 }
 
 .evento-palestra:hover {
   background-color: #7a4eb9;
+}
+
+/* Tipo: evento geral - Azul 🔵 */
+.evento-evento {
+  background-color: #4444ff;
+  color: white;
+}
+
+.evento-evento:hover {
+  background-color: #0000cc;
 }
 
 .calendario-grid {
