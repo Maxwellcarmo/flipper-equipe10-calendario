@@ -124,6 +124,7 @@ body {
   .menu-button {
     font-size: 1rem;
     padding: 14px;
+  
   }
 
   .header h1 {
@@ -172,6 +173,7 @@ body {
 .back-button i {
   margin-right: 8px;
 }
+
 
 /* Vagas em cards com grid */
 #vagas-container {

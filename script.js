@@ -5,12 +5,149 @@ function obterSemestreAtual() {
   return { ano, semestre };
 }
 
+// Cria UI de filtros (botão + dropdown com checkboxes)
+function criarUIFiltros() {
+  const container = document.getElementById('calendario-container');
+  if (!container) return;
+
+  // Se já existe, apenas atualiza as opções
+  let filtroWrapper = document.getElementById('filtros-wrapper');
+  if (!filtroWrapper) {
+    filtroWrapper = document.createElement('div');
+    filtroWrapper.id = 'filtros-wrapper';
+    filtroWrapper.className = 'filtros-wrapper';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'filtro-toggle';
+    btn.className = 'button-event filtro-btn';
+    btn.textContent = 'Filtrar';
+    btn.addEventListener('click', () => {
+      dropdown.classList.toggle('show');
+    });
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'filtro-dropdown';
+    dropdown.className = 'filtro-dropdown';
+
+    // Sections for tipos and cursos
+    const sectionTipos = document.createElement('div');
+    sectionTipos.className = 'filtro-section';
+    const hTipos = document.createElement('strong');
+    hTipos.textContent = 'Tipo';
+    sectionTipos.appendChild(hTipos);
+
+    const sectionCursos = document.createElement('div');
+    sectionCursos.className = 'filtro-section';
+    const hCursos = document.createElement('strong');
+    hCursos.textContent = 'Curso';
+    sectionCursos.appendChild(hCursos);
+
+    const actions = document.createElement('div');
+    actions.className = 'filtro-actions';
+    const aplicar = document.createElement('button');
+    aplicar.textContent = 'Aplicar';
+    aplicar.className = 'filtro-aplicar';
+    aplicar.addEventListener('click', () => {
+      dropdown.classList.remove('show');
+      aplicarFiltros();
+    });
+    const limpar = document.createElement('button');
+    limpar.textContent = 'Limpar';
+    limpar.className = 'filtro-limpar';
+    limpar.addEventListener('click', () => {
+      // desmarca tudo
+      dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      aplicarFiltros();
+    });
+    actions.appendChild(aplicar);
+    actions.appendChild(limpar);
+
+    dropdown.appendChild(sectionTipos);
+    dropdown.appendChild(sectionCursos);
+    dropdown.appendChild(actions);
+
+    filtroWrapper.appendChild(btn);
+    filtroWrapper.appendChild(dropdown);
+
+    // Insere antes do botão de adicionar evento (se existir)
+    container.appendChild(filtroWrapper);
+  }
+
+  // Preenche opções (atualiza os containers)
+  const dropdownEl = document.getElementById('filtro-dropdown');
+  if (!dropdownEl) return;
+  const tiposContainer = dropdownEl.querySelector('.filtro-section:nth-of-type(1)');
+  const cursosContainer = dropdownEl.querySelector('.filtro-section:nth-of-type(2)');
+
+  // Limpa (mantém o título como primeiro child)
+  while (tiposContainer.childElementCount > 1) tiposContainer.removeChild(tiposContainer.lastChild);
+  while (cursosContainer.childElementCount > 1) cursosContainer.removeChild(cursosContainer.lastChild);
+
+  filtrosDisponiveis.tipos.forEach(tipo => {
+    const id = `f_tipo_${tipo}`;
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" id="${id}" name="tipo" value="${tipo}"> ${tipo}`;
+    tiposContainer.appendChild(label);
+  });
+
+  filtrosDisponiveis.cursos.forEach(curso => {
+    const id = `f_curso_${curso}`.replace(/\s+/g, '_');
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" id="${id}" name="curso" value="${curso}"> ${curso}`;
+    cursosContainer.appendChild(label);
+  });
+}
+
+
+
+function aplicarFiltros() { aplicarFiltrosImpl(); }
+
+function aplicarFiltrosImpl() {
+  const dropdown = document.getElementById('filtro-dropdown');
+  if (!dropdown) return;
+  const tiposSel = Array.from(dropdown.querySelectorAll('input[name="tipo"]:checked')).map(i => i.value.toLowerCase());
+  const cursosSel = Array.from(dropdown.querySelectorAll('input[name="curso"]:checked')).map(i => i.value);
+
+  if (tiposSel.length === 0 && cursosSel.length === 0) {
+    eventosFiltrados = JSON.parse(JSON.stringify(eventos));
+    const mesAtual = new Date().getMonth() + 1;
+    document.querySelector(`.mes-btn[data-mes='${mesAtual}']`)?.click();
+    return;
+  }
+
+  const novo = {};
+  Object.keys(eventos).forEach(mes => {
+    const lista = eventos[mes].filter(ev => {
+      const tipoOk = tiposSel.length === 0 || tiposSel.includes((ev.tipo || '').toLowerCase());
+      const cursoOk = cursosSel.length === 0 || (ev.curso && cursosSel.includes(ev.curso));
+      return tipoOk && cursoOk;
+    });
+    if (lista.length) novo[mes] = lista;
+  });
+
+  eventosFiltrados = novo;
+  const mesAtual = new Date().getMonth() + 1;
+  document.querySelector(`.mes-btn[data-mes='${mesAtual}']`)?.click();
+}
+
 let eventos = {};
+let eventosFiltrados = {};
+let filtrosDisponiveis = { tipos: [], cursos: [] };
 
 const nomesMeses = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
+
+// Remove zeros à esquerda e converte para inteiro (aceita "01" -> 1)
+function limparNumero(valor) {
+  if (valor === null || valor === undefined) return null;
+  const s = String(valor).trim();
+  if (s === '') return null;
+  const noLeading = s.replace(/^0+/, '');
+  return noLeading === '' ? 0 : parseInt(noLeading, 10);
+}
 
 async function carregarEventos() {
   const SPREADSHEET_ID = '1LMCZvmkB2gn3sGQQj5ZDtEIqPVGygpzZ9S53PF2LUfM';
@@ -52,8 +189,8 @@ async function carregarEventos() {
             return;
           }
           
-          const mesNum = parseInt(mes);
-          if (isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
+          const mesNum = limparNumero(mes);
+          if (!mesNum || mesNum < 1 || mesNum > 12) {
             console.log('Mês inválido:', mes);
             return;
           }
@@ -63,8 +200,8 @@ async function carregarEventos() {
           }
           
           eventos[mesNum].push({
-            diaInicio: parseInt(dataInicio),
-            diaFim: dataFim ? parseInt(dataFim) : parseInt(dataInicio),
+            diaInicio: limparNumero(dataInicio),
+            diaFim: dataFim ? limparNumero(dataFim) : limparNumero(dataInicio),
             titulo: titulo,
             tipo: (tipo || 'evento').toLowerCase(),
             local: local || '',
@@ -76,6 +213,20 @@ async function carregarEventos() {
       }
       
       console.log('Eventos processados:', eventos);
+      // Inicializa eventosFiltrados como cópia completa
+      eventosFiltrados = JSON.parse(JSON.stringify(eventos));
+
+      // Monta listas únicas de tipos e cursos para os filtros
+      const tiposSet = new Set();
+      const cursosSet = new Set();
+      Object.values(eventos).forEach(lista => {
+        lista.forEach(ev => {
+          if (ev.tipo) tiposSet.add(ev.tipo.toLowerCase());
+          if (ev.curso) cursosSet.add(ev.curso);
+        });
+      });
+  filtrosDisponiveis.tipos = Array.from(tiposSet);
+  filtrosDisponiveis.cursos = Array.from(cursosSet);
       
       // Após carregar os eventos, atualizar o calendário
       const mesAtual = new Date().getMonth() + 1;
@@ -112,7 +263,7 @@ function gerarCalendario(mes, ano) {
   const primeiroDia = new Date(ano, mes - 1, 1).getDay();
   const diasNoMes = new Date(ano, mes, 0).getDate();
 
-  const eventosMes = eventos[mes] || [];
+  const eventosMes = eventosFiltrados[mes] || [];
   const mapaEventos = {};
   eventosMes.forEach(ev => {
     for (let d = ev.diaInicio; d <= ev.diaFim; d++) {
@@ -151,13 +302,15 @@ function gerarCalendario(mes, ano) {
     window.open(url, '_blank', 'noopener,noreferrer');
   });
   container.appendChild(addBtn);
+  // (Re)cria/atualiza a UI de filtros depois que o container foi montado
+  criarUIFiltros();
 }
 
 function gerarListaEventos(mes) {
   const container = document.getElementById("lista-eventos-container");
   container.innerHTML = "";
 
-  const eventosMes = eventos[mes];
+  const eventosMes = eventosFiltrados[mes];
   if (!eventosMes || eventosMes.length === 0) return;
 
   const bloco = document.createElement("div");
